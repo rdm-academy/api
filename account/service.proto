@@ -24,6 +24,7 @@ message CreateUserResponse {
 message GetUserRequest {
   string id = 1;
   string email = 2;
+  string name = 3;
 }
 
 message GetUserResponse {
@@ -31,7 +32,6 @@ message GetUserResponse {
   string name = 2;
   string email = 3;
 }
-
 
 message DeleteUserRequest {
   string id = 1;

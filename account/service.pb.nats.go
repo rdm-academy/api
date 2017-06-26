@@ -16,14 +16,14 @@ var (
 
 type Service interface {
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
-	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 }
 
 type ServiceClient interface {
 	CreateUser(context.Context, *CreateUserRequest, ...transport.RequestOption) (*CreateUserResponse, error)
-	DeleteUser(context.Context, *DeleteUserRequest, ...transport.RequestOption) (*DeleteUserResponse, error)
 	GetUser(context.Context, *GetUserRequest, ...transport.RequestOption) (*GetUserResponse, error)
+	DeleteUser(context.Context, *DeleteUserRequest, ...transport.RequestOption) (*DeleteUserResponse, error)
 }
 
 // serviceClient an implementation of Service client.
@@ -42,10 +42,10 @@ func (c *serviceClient) CreateUser(ctx context.Context, req *CreateUserRequest, 
 	return &rep, nil
 }
 
-func (c *serviceClient) DeleteUser(ctx context.Context, req *DeleteUserRequest, opts ...transport.RequestOption) (*DeleteUserResponse, error) {
-	var rep DeleteUserResponse
+func (c *serviceClient) GetUser(ctx context.Context, req *GetUserRequest, opts ...transport.RequestOption) (*GetUserResponse, error) {
+	var rep GetUserResponse
 
-	_, err := c.tp.Request("account.DeleteUser", req, &rep, opts...)
+	_, err := c.tp.Request("account.GetUser", req, &rep, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -53,10 +53,10 @@ func (c *serviceClient) DeleteUser(ctx context.Context, req *DeleteUserRequest, 
 	return &rep, nil
 }
 
-func (c *serviceClient) GetUser(ctx context.Context, req *GetUserRequest, opts ...transport.RequestOption) (*GetUserResponse, error) {
-	var rep GetUserResponse
+func (c *serviceClient) DeleteUser(ctx context.Context, req *DeleteUserRequest, opts ...transport.RequestOption) (*DeleteUserResponse, error) {
+	var rep DeleteUserResponse
 
-	_, err := c.tp.Request("account.GetUser", req, &rep, opts...)
+	_, err := c.tp.Request("account.DeleteUser", req, &rep, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,19 +102,6 @@ func (s *ServiceServer) Serve(ctx context.Context, opts ...transport.SubscribeOp
 	if err != nil {
 		return err
 	}
-	_, err = s.tp.Subscribe("account.DeleteUser", func(msg *transport.Message) (proto.Message, error) {
-		ctx := context.WithValue(ctx, traceIdKey, msg.Id)
-
-		var req DeleteUserRequest
-		if err := msg.Decode(&req); err != nil {
-			return nil, err
-		}
-
-		return s.svc.DeleteUser(ctx, &req)
-	}, opts...)
-	if err != nil {
-		return err
-	}
 	_, err = s.tp.Subscribe("account.GetUser", func(msg *transport.Message) (proto.Message, error) {
 		ctx := context.WithValue(ctx, traceIdKey, msg.Id)
 
@@ -124,6 +111,19 @@ func (s *ServiceServer) Serve(ctx context.Context, opts ...transport.SubscribeOp
 		}
 
 		return s.svc.GetUser(ctx, &req)
+	}, opts...)
+	if err != nil {
+		return err
+	}
+	_, err = s.tp.Subscribe("account.DeleteUser", func(msg *transport.Message) (proto.Message, error) {
+		ctx := context.WithValue(ctx, traceIdKey, msg.Id)
+
+		var req DeleteUserRequest
+		if err := msg.Decode(&req); err != nil {
+			return nil, err
+		}
+
+		return s.svc.DeleteUser(ctx, &req)
 	}, opts...)
 	if err != nil {
 		return err
