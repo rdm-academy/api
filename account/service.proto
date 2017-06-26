@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package account;
+
+service Service {
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+}
+
+message CreateUserRequest {
+  string issuer  = 1;
+  string subject = 2;
+  string name = 3;
+  string email = 4;
+}
+
+message CreateUserResponse {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message GetUserRequest {
+  string id = 1;
+  string email = 2;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {}

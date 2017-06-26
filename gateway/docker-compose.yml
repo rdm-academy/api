@@ -1,0 +1,16 @@
+version: "2"
+
+services:
+  nats:
+    image: nats
+    restart: always
+    ports:
+      - 4222:4222
+      - 8222:8222
+
+  gateway:
+    image: quay.io/rdm-academy/gateway
+    command: -nats.addr nats:4222
+    restart: always
+    depends_on:
+      - nats
