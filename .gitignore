@@ -1,2 +1,6 @@
 *.sw?
+*.py?
+*.env
+*.pem
 dist
+
