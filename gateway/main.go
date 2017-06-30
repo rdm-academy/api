@@ -269,6 +269,20 @@ func main() {
 		return c.JSON(http.StatusOK, rep.Projects)
 	}, authMiddleware, userMiddleware)
 
+	e.GET("/projects/:id", func(c echo.Context) error {
+		req := project.GetProjectRequest{
+			Id:      c.Param("id"),
+			Account: c.Get("user.id").(string),
+		}
+
+		rep, err := projects.GetProject(c.Request().Context(), &req)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, rep.Project)
+	}, authMiddleware, userMiddleware)
+
 	// Gracefully serve.
 	logger.Info("listening",
 		zap.String("http.addr", httpAddr),
