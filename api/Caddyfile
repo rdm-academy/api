@@ -1,0 +1,12 @@
+api.rdm.academy {
+  gzip
+  log stdout
+  errors stderr
+
+  proxy / http://gateway:8080 {
+    insecure_skip_verify
+    health_check /healthz
+    health_check_interval 5s
+    health_check_timeout 5s
+  }
+}
