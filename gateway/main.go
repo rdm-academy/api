@@ -242,6 +242,23 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	}, authMiddleware, userMiddleware)
 
+	e.PUT("/projects/:id/workflow", func(c echo.Context) error {
+		var req project.UpdateWorkflowRequest
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(http.StatusUnprocessableEntity, err)
+		}
+
+		req.Id = c.Param("id")
+		req.Account = c.Get("user.id").(string)
+
+		_, err := projects.UpdateWorkflow(c.Request().Context(), &req)
+		if err != nil {
+			return err
+		}
+
+		return c.NoContent(http.StatusOK)
+	}, authMiddleware, userMiddleware)
+
 	e.DELETE("/projects/:id", func(c echo.Context) error {
 		req := &project.DeleteProjectRequest{
 			Id:      c.Param("id"),
