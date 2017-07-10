@@ -38,6 +38,9 @@ build:
 		-ldflags "-X \"main.buildVersion=$(GIT_VERSION)\" -extldflags -static" \
 		-o ./dist/$(GOOS)-$(GOARCH)/$(PROG_NAME)-cli ./cmd/cli
 
+dist:
+	GOOS=linux make build
+
 docker:
 	docker build -t ${IMAGE_NAME}:${GIT_SHA} .
 	docker tag ${IMAGE_NAME}:${GIT_SHA} ${IMAGE_NAME}:${GIT_BRANCH}
@@ -62,4 +65,4 @@ docker-push:
 		docker push ${IMAGE_NAME}:latest ; \
 	fi;
 
-.PHONY: nop build proto docker docker-push
+.PHONY: nop build dist proto docker docker-push
