@@ -7,7 +7,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/nats-io/nuid"
-	"github.com/rdm-academy/service/account"
+	"github.com/rdm-academy/api/account"
 	"go.uber.org/zap"
 )
 

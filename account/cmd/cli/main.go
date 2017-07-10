@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rdm-academy/service/account"
+	"github.com/rdm-academy/api/account"
 
 	"github.com/chop-dbhi/nats-rpc/log"
 	"github.com/chop-dbhi/nats-rpc/transport"

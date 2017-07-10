@@ -17,8 +17,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/nats-io/go-nats"
-	"github.com/rdm-academy/service/account"
-	"github.com/rdm-academy/service/project"
+	"github.com/rdm-academy/api/account"
+	"github.com/rdm-academy/api/project"
 	"github.com/tylerb/graceful"
 )
 

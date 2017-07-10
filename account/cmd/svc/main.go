@@ -11,7 +11,7 @@ import (
 	"github.com/chop-dbhi/nats-rpc/log"
 	"github.com/chop-dbhi/nats-rpc/transport"
 	"github.com/nats-io/go-nats"
-	"github.com/rdm-academy/service/account"
+	"github.com/rdm-academy/api/account"
 
 	"go.uber.org/zap"
 )
