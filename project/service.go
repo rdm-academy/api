@@ -18,13 +18,19 @@ const (
 	projectsCol = "projects"
 )
 
+type workflow struct {
+	Source   string    `bson:"source"`
+	Modified time.Time `bson:"modified"`
+}
+
 type project struct {
-	ID          string    `bson:"_id"`
-	Account     string    `bson:"account"`
-	Name        string    `bson:"name"`
-	Description string    `bson:"description"`
-	Created     time.Time `bson:"created"`
-	Modified    time.Time `bson:"modified"`
+	ID          string      `bson:"_id"`
+	Account     string      `bson:"account"`
+	Name        string      `bson:"name"`
+	Description string      `bson:"description"`
+	Created     time.Time   `bson:"created"`
+	Modified    time.Time   `bson:"modified"`
+	Workflows   []*workflow `bson:"workflows"`
 
 	// Internal fields for lookups.
 	NormName string `bson:"_name"`
@@ -74,6 +80,7 @@ func (s *service) CreateProject(ctx context.Context, req *CreateProjectRequest) 
 		Description: p.Description,
 		Created:     p.Created.Unix(),
 		Modified:    p.Modified.Unix(),
+		Workflow:    &Workflow{},
 	}
 
 	return &CreateProjectResponse{
@@ -117,19 +124,62 @@ func (s *service) UpdateProject(ctx context.Context, req *UpdateProjectRequest) 
 	return &UpdateProjectResponse{}, nil
 }
 
+func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest) (*UpdateWorkflowResponse, error) {
+
+	// Query of current project.
+	q := bson.M{
+		"_id":     req.Id,
+		"account": req.Account,
+	}
+
+	// Append new workflow revision to inner array.
+	u := bson.M{
+		"$push": bson.M{
+			"workflows": &workflow{
+				Source:   req.Source,
+				Modified: time.Now(),
+			},
+		},
+	}
+
+	if err := s.db.C(projectsCol).Update(q, u); err != nil {
+		return nil, err
+	}
+
+	return &UpdateWorkflowResponse{}, nil
+}
+
 func (s *service) GetProject(ctx context.Context, req *GetProjectRequest) (*GetProjectResponse, error) {
 	q := bson.M{
 		"_id":     req.Id,
 		"account": req.Account,
 	}
 
+	// Only select the last revision of the workflow.
+	x := bson.M{
+		"workflows": bson.M{
+			"$slice": -1,
+		},
+	}
+
 	var p project
-	if err := s.db.C(projectsCol).Find(q).One(&p); err != nil {
+	if err := s.db.C(projectsCol).Find(q).Select(x).One(&p); err != nil {
 		if err == mgo.ErrNotFound {
 			return nil, status.Error(codes.NotFound, "project not found")
 		}
 
 		return nil, err
+	}
+
+	// Convert to response workflow.
+	var w *Workflow
+	if len(p.Workflows) == 1 {
+		w = &Workflow{
+			Source:   p.Workflows[0].Source,
+			Modified: p.Workflows[0].Modified.Unix(),
+		}
+	} else {
+		w = &Workflow{}
 	}
 
 	return &GetProjectResponse{
@@ -140,6 +190,7 @@ func (s *service) GetProject(ctx context.Context, req *GetProjectRequest) (*GetP
 			Description: p.Description,
 			Created:     p.Created.Unix(),
 			Modified:    p.Modified.Unix(),
+			Workflow:    w,
 		},
 	}, nil
 }
@@ -149,13 +200,31 @@ func (s *service) ListProjects(ctx context.Context, req *ListProjectsRequest) (*
 		"account": req.Account,
 	}
 
+	x := bson.M{
+		"workflows": bson.M{
+			"$slice": -1,
+		},
+	}
+
 	var docs []*project
-	if err := s.db.C(projectsCol).Find(q).All(&docs); err != nil {
+	if err := s.db.C(projectsCol).Find(q).Select(x).All(&docs); err != nil {
 		return nil, err
 	}
 
 	list := make([]*Project, len(docs))
 	for i, p := range docs {
+
+		// Convert to response workflow.
+		var w *Workflow
+		if len(p.Workflows) == 1 {
+			w = &Workflow{
+				Source:   p.Workflows[0].Source,
+				Modified: p.Workflows[0].Modified.Unix(),
+			}
+		} else {
+			w = &Workflow{}
+		}
+
 		list[i] = &Project{
 			Id:          p.ID,
 			Account:     p.Account,
@@ -163,6 +232,7 @@ func (s *service) ListProjects(ctx context.Context, req *ListProjectsRequest) (*
 			Description: p.Description,
 			Created:     p.Created.Unix(),
 			Modified:    p.Modified.Unix(),
+			Workflow:    w,
 		}
 	}
 

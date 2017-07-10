@@ -19,6 +19,7 @@ type Service interface {
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
+	UpdateWorkflow(context.Context, *UpdateWorkflowRequest) (*UpdateWorkflowResponse, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 }
 
@@ -27,6 +28,7 @@ type ServiceClient interface {
 	GetProject(context.Context, *GetProjectRequest, ...transport.RequestOption) (*GetProjectResponse, error)
 	ListProjects(context.Context, *ListProjectsRequest, ...transport.RequestOption) (*ListProjectsResponse, error)
 	UpdateProject(context.Context, *UpdateProjectRequest, ...transport.RequestOption) (*UpdateProjectResponse, error)
+	UpdateWorkflow(context.Context, *UpdateWorkflowRequest, ...transport.RequestOption) (*UpdateWorkflowResponse, error)
 	DeleteProject(context.Context, *DeleteProjectRequest, ...transport.RequestOption) (*DeleteProjectResponse, error)
 }
 
@@ -72,6 +74,17 @@ func (c *serviceClient) UpdateProject(ctx context.Context, req *UpdateProjectReq
 	var rep UpdateProjectResponse
 
 	_, err := c.tp.Request("project.UpdateProject", req, &rep, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rep, nil
+}
+
+func (c *serviceClient) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest, opts ...transport.RequestOption) (*UpdateWorkflowResponse, error) {
+	var rep UpdateWorkflowResponse
+
+	_, err := c.tp.Request("project.UpdateWorkflow", req, &rep, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +176,19 @@ func (s *ServiceServer) Serve(ctx context.Context, opts ...transport.SubscribeOp
 		}
 
 		return s.svc.UpdateProject(ctx, &req)
+	}, opts...)
+	if err != nil {
+		return err
+	}
+	_, err = s.tp.Subscribe("project.UpdateWorkflow", func(msg *transport.Message) (proto.Message, error) {
+		ctx := context.WithValue(ctx, traceIdKey, msg.Id)
+
+		var req UpdateWorkflowRequest
+		if err := msg.Decode(&req); err != nil {
+			return nil, err
+		}
+
+		return s.svc.UpdateWorkflow(ctx, &req)
 	}, opts...)
 	if err != nil {
 		return err

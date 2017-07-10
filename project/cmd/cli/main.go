@@ -125,6 +125,14 @@ func main() {
 		}
 		rep, err = client.UpdateProject(ctx, &req)
 
+	case "UpdateWorkflow":
+		client := project.NewServiceClient(tp)
+		var req project.UpdateWorkflowRequest
+		if err := jsonUnmarshaler.Unmarshal(inpr, &req); err != nil {
+			log.Fatalf("json: %s", err)
+		}
+		rep, err = client.UpdateWorkflow(ctx, &req)
+
 	case "DeleteProject":
 		client := project.NewServiceClient(tp)
 		var req project.DeleteProjectRequest

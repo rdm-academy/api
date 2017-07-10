@@ -7,7 +7,13 @@ service Service {
   rpc GetProject (GetProjectRequest) returns (GetProjectResponse);
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse);
   rpc UpdateProject (UpdateProjectRequest) returns (UpdateProjectResponse);
+  rpc UpdateWorkflow (UpdateWorkflowRequest) returns (UpdateWorkflowResponse);
   rpc DeleteProject (DeleteProjectRequest) returns (DeleteProjectResponse);
+}
+
+message Workflow {
+  string source = 1;
+  int64 modified = 2;
 }
 
 message Project {
@@ -17,6 +23,7 @@ message Project {
   string description = 4;
   int64 created = 5;
   int64 modified = 6;
+  Workflow workflow = 7;
 }
 
 message CreateProjectRequest {
@@ -37,6 +44,15 @@ message UpdateProjectRequest {
 }
 
 message UpdateProjectResponse {}
+
+
+message UpdateWorkflowRequest {
+  string account = 1;
+  string id = 2;
+  string source = 3;
+}
+
+message UpdateWorkflowResponse {}
 
 
 message DeleteProjectRequest {
