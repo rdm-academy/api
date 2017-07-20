@@ -41,7 +41,7 @@ type service struct {
 
 func (s *service) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
 	if req.Email == "" {
-		return nil, status.Error(codes.FailedPrecondition, "email required")
+		return nil, status.Error(codes.InvalidArgument, "email required")
 	}
 
 	now := time.Now()
@@ -97,7 +97,7 @@ func (s *service) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRes
 			"email": strings.ToLower(req.Email),
 		}
 	} else {
-		return nil, status.Error(codes.FailedPrecondition, "id or email must be specified")
+		return nil, status.Error(codes.InvalidArgument, "id or email must be specified")
 	}
 
 	var user User
@@ -118,7 +118,7 @@ func (s *service) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRes
 
 func (s *service) DeleteUser(ctx context.Context, req *DeleteUserRequest) (*DeleteUserResponse, error) {
 	if req.Id == "" {
-		return nil, status.Error(codes.FailedPrecondition, "user id required")
+		return nil, status.Error(codes.InvalidArgument, "user id required")
 	}
 
 	if err := s.db.C(usersCol).RemoveId(req.Id); err != nil {

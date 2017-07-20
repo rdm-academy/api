@@ -42,11 +42,11 @@ type service struct {
 
 func (s *service) CreateProject(ctx context.Context, req *CreateProjectRequest) (*CreateProjectResponse, error) {
 	if req.Account == "" {
-		return nil, status.Error(codes.FailedPrecondition, "account required")
+		return nil, status.Error(codes.InvalidArgument, "account required")
 	}
 
 	if req.Name == "" {
-		return nil, status.Error(codes.FailedPrecondition, "name required")
+		return nil, status.Error(codes.InvalidArgument, "name required")
 	}
 
 	now := time.Now()
@@ -90,7 +90,7 @@ func (s *service) CreateProject(ctx context.Context, req *CreateProjectRequest) 
 
 func (s *service) UpdateProject(ctx context.Context, req *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	if req.Name == "" {
-		return nil, status.Error(codes.FailedPrecondition, "name required")
+		return nil, status.Error(codes.InvalidArgument, "name required")
 	}
 
 	// Query of current project.
