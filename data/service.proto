@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package data;
+
+
+service Service {
+  rpc Import (ImportRequest) returns (ImportReply);
+  rpc Upload (UploadRequest) returns (UploadReply);
+  rpc Describe (DescribeRequest) returns (DescribeReply);
+  rpc Update (UpdateRequest) returns (UpdateReply);
+  rpc Get (GetRequest) returns (GetReply);
+}
+
+
+// ImportRequest is a request to import data from a remote location.
+// Returned is a unique id of the data to be imported. The actual import
+// is asynchronous, but this id can be used to check the state.
+message ImportRequest {
+  string url = 1;
+}
+
+message ImportReply {
+  string id = 1;
+}
+
+
+// UploadRequest is request to upload data. It returns a unique data
+// id and a pre-signed URL the client can use to PUT the data to.
+message UploadRequest {}
+
+message UploadReply {
+  string id = 1;
+  string signed_url = 2;
+}
+
+enum State {
+  UNKNOWN = 0;
+  CREATED = 1;
+  INPROGRESS = 2;
+  ERROR = 3;
+  DONE = 4;
+}
+
+// DescribeRequest takes a data id for returns information about the data.
+message DescribeRequest {
+  string id = 1;
+}
+
+message DescribeReply {
+  // Unique ID of the data record.
+  string id = 1;
+
+  // The time the data record was initially created.
+  int64 create_time = 2;
+
+  // State is the state of the data.
+  State state = 3;
+
+  // Error is an error that occurred during import.
+  string error = 4; 
+
+  // The URL of the data being imported.
+  string import_url = 6;
+
+  // Time the import started. Note, there is no upload start time
+  int64 import_time = 7;
+
+  // Time the object was successfully put into storage.
+  int64 put_time = 8;
+
+  // Hash of the object.
+  string hash = 9;
+
+  // Size of the object in bytes.
+  int64 size = 10;
+
+  // The mediatype of the object if detected.
+  string mediatype = 11;
+
+  // The compression method used if any.
+  string compression = 12;
+
+  int64 modified_time = 13;
+}
+
+
+// UpdateRequest updates the state of the object. Once the object
+// is in the DONE state, no more updates can be made.
+message UpdateRequest {
+  // ID of the object.
+  string id = 1;
+
+  // State is the state of the data.
+  State state = 2;
+
+  // Error is an error that occurred during import.
+  string error = 3; 
+
+  // Time the import began.
+  int64 import_time = 8;
+
+  // Time the object was successfully put into storage.
+  int64 put_time = 4;
+
+  // Hash of the object.
+  string hash = 5;
+
+  // Size of the object in bytes.
+  int64 size = 6;
+
+  // Mediatype.
+  string mediatype = 7;
+}
+
+message UpdateReply {}
+
+
+// GetRequest requests a pre-signed URL for downloading the data.
+message GetRequest {
+  string id = 1;
+}
+
+message GetReply {
+  string signed_url = 1;
+}
