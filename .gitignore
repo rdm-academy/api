@@ -2,5 +2,9 @@
 *.py?
 *.env
 *.pem
+.*
 dist
+fabfile.py
+ssh_config
 
+!.dockerignore
