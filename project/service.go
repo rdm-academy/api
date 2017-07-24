@@ -2,6 +2,8 @@ package project
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
@@ -11,12 +13,21 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
+	"github.com/chop-dbhi/nats-rpc/transport"
+	"github.com/rdm-academy/api/commitlog"
 	uuid "github.com/satori/go.uuid"
 )
 
 const (
 	projectsCol = "projects"
 )
+
+type logEvent struct {
+	Project string
+	Type    string
+	Author  string
+	Data    interface{}
+}
 
 type node struct {
 	Type   string   `bson:"type"`
@@ -47,6 +58,25 @@ type project struct {
 
 type service struct {
 	db *mgo.Database
+	tp transport.Transport
+}
+
+func (s *service) logEvent(t string, e *logEvent) {
+	b, err := json.Marshal(e.Data)
+	if err != nil {
+		log.Printf("eventlog: data encoding error: %s", err)
+	}
+
+	_, err = s.tp.Publish(t, &commitlog.Event{
+		Project: e.Project,
+		Time:    time.Now().Unix(),
+		Type:    e.Type,
+		Author:  e.Author,
+		Data:    b,
+	})
+	if err != nil {
+		log.Printf("eventlog: publish error: %s", err)
+	}
 }
 
 func (s *service) CreateProject(ctx context.Context, req *CreateProjectRequest) (*CreateProjectResponse, error) {
@@ -92,6 +122,16 @@ func (s *service) CreateProject(ctx context.Context, req *CreateProjectRequest) 
 		Workflow:    &Workflow{},
 	}
 
+	// Log the event.
+	s.logEvent("events.project", &logEvent{
+		Type:    "project.created",
+		Project: p.ID,
+		Author:  p.Account,
+		Data: map[string]interface{}{
+			"name": p.Name,
+		},
+	})
+
 	return &CreateProjectResponse{
 		Project: rep,
 	}, nil
@@ -129,6 +169,16 @@ func (s *service) UpdateProject(ctx context.Context, req *UpdateProjectRequest) 
 		// Unknown.
 		return nil, err
 	}
+
+	s.logEvent("events.project", &logEvent{
+		Project: req.Id,
+		Type:    "project.updated",
+		Author:  req.Account,
+		Data: map[string]interface{}{
+			"name":        req.Name,
+			"description": req.Description,
+		},
+	})
 
 	return &UpdateProjectResponse{}, nil
 }
@@ -187,6 +237,107 @@ func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest
 
 	if err := s.db.C(projectsCol).Update(q, u); err != nil {
 		return nil, err
+	}
+
+	for k, n := range gd.Added {
+		s.logEvent("events.project", &logEvent{
+			Project: req.Id,
+			Type:    "node.added",
+			Author:  req.Account,
+			Data: map[string]interface{}{
+				"workflow": wid,
+				"node": map[string]interface{}{
+					"key":    k,
+					"type":   n.Type,
+					"title":  n.Title,
+					"input":  n.Input,
+					"output": n.Output,
+				},
+			},
+		})
+	}
+
+	for k, n := range gd.Removed {
+		s.logEvent("events.project", &logEvent{
+			Project: req.Id,
+			Type:    "node.removed",
+			Author:  req.Account,
+			Data: map[string]interface{}{
+				"workflow": wid,
+				"node": map[string]interface{}{
+					"key":    k,
+					"type":   n.Type,
+					"title":  n.Title,
+					"input":  n.Input,
+					"output": n.Output,
+				},
+			},
+		})
+	}
+
+	for k, n := range gd.Changed {
+		// Rename.
+		if n.ToTitle != "" {
+			s.logEvent("events.project", &logEvent{
+				Project: req.Id,
+				Type:    "node.renamed",
+				Author:  req.Account,
+				Data: map[string]interface{}{
+					"workflow": wid,
+					"node": map[string]interface{}{
+						"key":  k,
+						"from": n.FromTitle,
+						"to":   n.ToTitle,
+					},
+				},
+			})
+		}
+
+		// Added/removed inputs.
+		for e, ok := range n.Input {
+			var t string
+			if ok {
+				t = "node.input-added"
+			} else {
+				t = "node.input-removed"
+			}
+
+			s.logEvent("events.project", &logEvent{
+				Project: req.Id,
+				Type:    t,
+				Author:  req.Account,
+				Data: map[string]interface{}{
+					"workflow": wid,
+					"node": map[string]interface{}{
+						"key":   k,
+						"input": e,
+					},
+				},
+			})
+		}
+
+		// Added/removed outputs.
+		for e, ok := range n.Output {
+			var t string
+			if ok {
+				t = "node.output-added"
+			} else {
+				t = "node.output-removed"
+			}
+
+			s.logEvent("events.project", &logEvent{
+				Project: req.Id,
+				Type:    t,
+				Author:  req.Account,
+				Data: map[string]interface{}{
+					"workflow": wid,
+					"node": map[string]interface{}{
+						"key":    k,
+						"output": e,
+					},
+				},
+			})
+		}
 	}
 
 	return &UpdateWorkflowResponse{}, nil
@@ -324,10 +475,16 @@ func (s *service) DeleteProject(ctx context.Context, req *DeleteProjectRequest) 
 		return nil, err
 	}
 
+	s.logEvent("events.project", &logEvent{
+		Project: req.Id,
+		Type:    "project.deleted",
+		Author:  req.Account,
+	})
+
 	return &DeleteProjectResponse{}, nil
 }
 
-func NewService(db *mgo.Database) (Service, error) {
+func NewService(tp transport.Transport, db *mgo.Database) (Service, error) {
 	err := db.C(projectsCol).EnsureIndex(mgo.Index{
 		Key:    []string{"account", "_name"},
 		Unique: true,
@@ -338,5 +495,6 @@ func NewService(db *mgo.Database) (Service, error) {
 
 	return &service{
 		db: db,
+		tp: tp,
 	}, nil
 }

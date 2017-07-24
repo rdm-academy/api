@@ -77,7 +77,7 @@ func main() {
 	db := session.DB("")
 
 	// Initialize the service.
-	svc, err := project.NewService(db)
+	svc, err := project.NewService(tp, db)
 	if err != nil {
 		log.Fatal(err)
 	}
