@@ -140,6 +140,20 @@ func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	rep, err := s.GetProject(ctx, &GetProjectRequest{
+		Id:      req.Id,
+		Account: req.Account,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ag := &Graph{Nodes: rep.Project.Workflow.Nodes}
+	gd := DiffGraph(ag, g)
+
+	if gd == nil {
+		return nil, status.Error(codes.FailedPrecondition, "nothing changed")
+	}
 
 	// Query of current project.
 	q := bson.M{
