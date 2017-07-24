@@ -19,8 +19,9 @@ const (
 )
 
 type workflow struct {
-	Source   string    `bson:"source"`
-	Modified time.Time `bson:"modified"`
+	ID       string           `bson:"id"`
+	Source   string           `bson:"source"`
+	Modified time.Time        `bson:"modified"`
 }
 
 type project struct {
@@ -132,10 +133,13 @@ func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest
 		"account": req.Account,
 	}
 
+	wid := uuid.NewV4().String()
+
 	// Append new workflow revision to inner array.
 	u := bson.M{
 		"$push": bson.M{
 			"workflows": &workflow{
+				ID:       wid,
 				Source:   req.Source,
 				Modified: time.Now(),
 			},
