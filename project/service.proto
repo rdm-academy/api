@@ -11,9 +11,17 @@ service Service {
   rpc DeleteProject (DeleteProjectRequest) returns (DeleteProjectResponse);
 }
 
+message Node {
+  string title = 1;
+  string type = 2;
+  repeated string input = 3;
+  repeated string output = 4;
+}
+
 message Workflow {
   string source = 1;
   int64 modified = 2;
+  map<string, Node> nodes = 3;
 }
 
 message Project {

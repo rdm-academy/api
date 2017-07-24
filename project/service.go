@@ -18,10 +18,18 @@ const (
 	projectsCol = "projects"
 )
 
+type node struct {
+	Type   string   `bson:"type"`
+	Title  string   `bson:"title"`
+	Input  []string `bson:"input"`
+	Output []string `bson:"output"`
+}
+
 type workflow struct {
 	ID       string           `bson:"id"`
 	Source   string           `bson:"source"`
 	Modified time.Time        `bson:"modified"`
+	Nodes    map[string]*node `bson:"nodes"`
 }
 
 type project struct {
@@ -126,6 +134,12 @@ func (s *service) UpdateProject(ctx context.Context, req *UpdateProjectRequest) 
 }
 
 func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest) (*UpdateWorkflowResponse, error) {
+	// TODO: parse and validate workflow source.
+	g, err := ParseSource(req.Source)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 
 	// Query of current project.
 	q := bson.M{
@@ -135,6 +149,16 @@ func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest
 
 	wid := uuid.NewV4().String()
 
+	nodes := make(map[string]*node, len(g.Nodes))
+	for k, v := range g.Nodes {
+		nodes[k] = &node{
+			Type:   v.Type,
+			Title:  v.Title,
+			Output: v.Output,
+			Input:  v.Input,
+		}
+	}
+
 	// Append new workflow revision to inner array.
 	u := bson.M{
 		"$push": bson.M{
@@ -142,6 +166,7 @@ func (s *service) UpdateWorkflow(ctx context.Context, req *UpdateWorkflowRequest
 				ID:       wid,
 				Source:   req.Source,
 				Modified: time.Now(),
+				Nodes:    nodes,
 			},
 		},
 	}
@@ -181,6 +206,19 @@ func (s *service) GetProject(ctx context.Context, req *GetProjectRequest) (*GetP
 		w = &Workflow{
 			Source:   p.Workflows[0].Source,
 			Modified: p.Workflows[0].Modified.Unix(),
+		}
+
+		nodes := p.Workflows[0].Nodes
+		if nodes != nil {
+			w.Nodes = make(map[string]*Node, len(nodes))
+			for k, v := range nodes {
+				w.Nodes[k] = &Node{
+					Type:   v.Type,
+					Title:  v.Title,
+					Input:  v.Input,
+					Output: v.Output,
+				}
+			}
 		}
 	} else {
 		w = &Workflow{}
@@ -224,6 +262,19 @@ func (s *service) ListProjects(ctx context.Context, req *ListProjectsRequest) (*
 			w = &Workflow{
 				Source:   p.Workflows[0].Source,
 				Modified: p.Workflows[0].Modified.Unix(),
+			}
+
+			nodes := p.Workflows[0].Nodes
+			if nodes != nil {
+				w.Nodes = make(map[string]*Node, len(nodes))
+				for k, v := range nodes {
+					w.Nodes[k] = &Node{
+						Type:   v.Type,
+						Title:  v.Title,
+						Input:  v.Input,
+						Output: v.Output,
+					}
+				}
 			}
 		} else {
 			w = &Workflow{}
