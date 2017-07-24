@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package commitlog;
+
+
+service Service {
+  rpc Commit (CommitRequest) returns (CommitReply);
+  rpc History (HistoryRequest) returns (HistoryReply);
+  rpc Pending (PendingRequest) returns (PendingReply);
+}
+
+message Commit {
+  string id = 1;
+  string msg = 2;
+  string author = 3;
+  int64 time = 4;
+  repeated Event events = 5;
+  string parent = 6;
+}
+
+message Event {
+  string project = 1;
+  string id = 6;
+  int64 time = 2;
+  string type = 3;
+  string author = 4;
+  bytes data = 5;
+}
+
+message CommitRequest {
+  string project = 1;
+  string author = 2;
+  string msg  = 3;
+}
+
+message CommitReply {
+  string id = 1;
+}
+
+
+message HistoryRequest {
+  string project = 1;
+
+  // The commit to fetch. It not specified, the latest commit is fetched.
+  string commit = 2;
+}
+
+message HistoryReply {
+  // The next commit (previous one in time).
+  string next = 1;
+
+  // The commit for this request.
+  Commit commit = 2;
+}
+
+message PendingRequest {
+  string project = 1;
+}
+
+message PendingReply {
+  // The pending events.
+  repeated Event events = 1;
+}
