@@ -59,16 +59,16 @@ type object struct {
 	ModifiedTime time.Time `bson:"modified_time"`
 }
 
-type service struct {
-	db      *mgo.Database
-	storage storage.Storage
-	bucket  string
-}
-
 type fileMeta struct {
 	Size      int64
 	Mediatype string
 	Hash      string
+}
+
+type service struct {
+	db      *mgo.Database
+	storage storage.Storage
+	bucket  string
 }
 
 func (s *service) fetch(ctx context.Context, o *object) {
