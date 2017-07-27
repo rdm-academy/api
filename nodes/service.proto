@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package nodes;
+
+
+service Service {
+  rpc Create (CreateRequest) returns (NoReply);
+  rpc SetTitle (SetTitleRequest) returns (NoReply);
+  rpc SetNotes (SetNotesRequest) returns (NoReply);
+  rpc AddFiles (AddFilesRequest) returns (NoReply);
+  rpc RemoveFiles (RemoveFilesRequest) returns (NoReply);
+  rpc Get (GetRequest) returns (GetReply);
+}
+
+enum NodeType {
+  UNKNOWN = 0;
+  DATA = 1;
+  COMPUTE = 2;
+  MANUAL = 3;
+  FINDING = 4;
+}
+
+message File {
+  // ID of the file stored in the data service.
+  string id = 1;
+  // Local name of the file.
+  string name = 2;
+}
+
+message NoReply {}
+
+message CreateRequest {
+  // ID is provided by caller.
+  string id = 1;
+  string project = 2;
+  NodeType type = 3;
+  string title = 4;
+}
+
+message SetTitleRequest {
+  string id = 1;
+  string project = 2;
+  string title = 3;
+}
+
+message SetNotesRequest {
+  string id = 1;
+  string project = 2;
+  string notes = 3;
+}
+
+message AddFilesRequest {
+  string id = 1;
+  string project = 2;
+  repeated File files = 3;
+}
+
+message RemoveFilesRequest {
+  string id = 1;
+  string project = 2;
+  repeated string file_ids = 3;
+}
+
+message GetRequest {
+  string id = 1;
+  string project = 2;
+}
+
+message GetReply {
+  // ID of the node.
+  string id = 1;
+
+  // Type of node
+  NodeType type = 2;
+
+  // Title/description of the node.
+  string title = 3;
+
+  // Long-form notes.
+  string notes = 4;
+
+  repeated File files = 5;
+}
