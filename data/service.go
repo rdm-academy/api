@@ -365,6 +365,8 @@ func (s *service) Get(ctx context.Context, req *GetRequest) (*GetReply, error) {
 
 	return &GetReply{
 		SignedUrl: url,
+		Mediatype: d.Mediatype,
+		Size:      d.Size,
 	}, nil
 }
 

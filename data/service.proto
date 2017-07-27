@@ -122,4 +122,6 @@ message GetRequest {
 
 message GetReply {
   string signed_url = 1;
+  string mediatype = 2;
+  int64 size = 3;
 }
