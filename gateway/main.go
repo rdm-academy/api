@@ -20,6 +20,8 @@ import (
 	"github.com/nats-io/go-nats"
 	"github.com/rdm-academy/api/account"
 	"github.com/rdm-academy/api/commitlog"
+	"github.com/rdm-academy/api/data"
+	"github.com/rdm-academy/api/nodes"
 	"github.com/rdm-academy/api/project"
 	"github.com/tylerb/graceful"
 )
@@ -112,6 +114,8 @@ func main() {
 	accountSvc := account.NewServiceClient(tp)
 	projectSvc := project.NewServiceClient(tp)
 	commitlogSvc := commitlog.NewServiceClient(tp)
+	dataSvc := data.NewServiceClient(tp)
+	nodeSvc := nodes.NewServiceClient(tp)
 
 	// Used to enrich objects prior to get them to the client.
 	// A poor mans GraphQL..
@@ -470,6 +474,205 @@ func main() {
 		req.Author = account
 
 		_, err = commitlogSvc.Commit(ctx, &req)
+		if err != nil {
+			return err
+		}
+
+		return c.NoContent(http.StatusOK)
+	}, authMiddleware, userMiddleware)
+
+	// Get data about a node.
+	e.GET("/projects/:project/nodes/:node", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		project := c.Param("project")
+		node := c.Param("node")
+
+		rep, err := nodeSvc.Get(ctx, &nodes.GetRequest{
+			Project: project,
+			Id:      node,
+		})
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, rep)
+	}, authMiddleware, userMiddleware)
+
+	type nodeData struct {
+		Title *string
+		Notes *string
+	}
+
+	// Update data about a node.
+	e.PUT("/projects/:project/nodes/:node", func(c echo.Context) error {
+		var data nodeData
+		if err := c.Bind(&data); err != nil {
+			return err
+		}
+
+		ctx := c.Request().Context()
+
+		project := c.Param("project")
+		node := c.Param("node")
+
+		if data.Title != nil {
+			_, err := nodeSvc.SetTitle(ctx, &nodes.SetTitleRequest{
+				Project: project,
+				Id:      node,
+				Title:   *data.Title,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		if data.Notes != nil {
+			_, err := nodeSvc.SetNotes(ctx, &nodes.SetNotesRequest{
+				Project: project,
+				Id:      node,
+				Notes:   *data.Notes,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		return c.NoContent(http.StatusOK)
+	}, authMiddleware, userMiddleware)
+
+	// Upload files and associate it to the node.
+	e.POST("/projects/:project/nodes/:node/upload", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		project := c.Param("project")
+		node := c.Param("node")
+
+		_, err := nodeSvc.Get(ctx, &nodes.GetRequest{
+			Project: project,
+			Id:      node,
+		})
+		if err != nil {
+			return err
+		}
+
+		form, err := c.MultipartForm()
+		if err != nil {
+			return err
+		}
+
+		var files []*nodes.File
+
+		// TODO: parallelize.
+		for _, f := range form.File["files"] {
+			src, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer src.Close()
+
+			// Use client helper function to upload.
+			id, err := data.Upload(ctx, dataSvc, "", src)
+			if err != nil {
+				return err
+			}
+
+			files = append(files, &nodes.File{
+				Id:   id,
+				Name: f.Filename,
+			})
+		}
+
+		_, err = nodeSvc.AddFiles(ctx, &nodes.AddFilesRequest{
+			Project: project,
+			Id:      node,
+			Files:   files,
+		})
+		if err != nil {
+			return err
+		}
+
+		return c.NoContent(http.StatusOK)
+	}, authMiddleware, userMiddleware)
+
+	// Get details about a file.
+	e.GET("/projects/:project/files/:file", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		//project := c.Param("project")
+		file := c.Param("file")
+
+		rep, err := dataSvc.Describe(ctx, &data.DescribeRequest{
+			Id: file,
+		})
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, rep)
+	}, authMiddleware, userMiddleware)
+
+	// Get a signed url for a client requested download.
+	e.GET("/projects/:project/files/:file/url", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		//project := c.Param("project")
+		file := c.Param("file")
+
+		rep, err := dataSvc.Get(ctx, &data.GetRequest{
+			Id: file,
+		})
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, rep)
+	}, authMiddleware, userMiddleware)
+
+	// Download a file.
+	e.GET("/projects/:project/files/:file/download", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		// TODO: check association to project/permission
+		//project := c.Param("project")
+		file := c.Param("file")
+
+		rep, err := dataSvc.Get(ctx, &data.GetRequest{
+			Id: file,
+		})
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.Get(rep.SignedUrl)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		contentType := echo.MIMEOctetStream
+		if rep.Mediatype != "" {
+			contentType = rep.Mediatype
+		}
+
+		return c.Stream(http.StatusOK, contentType, resp.Body)
+	}, authMiddleware, userMiddleware)
+
+	// Remove a file from a node.
+	e.DELETE("/projects/:project/nodes/:node/files/:file", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		project := c.Param("project")
+		node := c.Param("node")
+		file := c.Param("file")
+
+		_, err := nodeSvc.RemoveFiles(ctx, &nodes.RemoveFilesRequest{
+			Project: project,
+			Id:      node,
+			FileIds: []string{
+				file,
+			},
+		})
 		if err != nil {
 			return err
 		}
