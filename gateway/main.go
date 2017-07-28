@@ -513,6 +513,7 @@ func main() {
 
 		ctx := c.Request().Context()
 
+		account := c.Get("user.id").(string)
 		project := c.Param("project")
 		node := c.Param("node")
 
@@ -521,6 +522,7 @@ func main() {
 				Project: project,
 				Id:      node,
 				Title:   *data.Title,
+				Account: account,
 			})
 			if err != nil {
 				return err
@@ -532,6 +534,7 @@ func main() {
 				Project: project,
 				Id:      node,
 				Notes:   *data.Notes,
+				Account: account,
 			})
 			if err != nil {
 				return err
@@ -545,6 +548,7 @@ func main() {
 	e.POST("/projects/:project/nodes/:node/upload", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
+		account := c.Get("user.id").(string)
 		project := c.Param("project")
 		node := c.Param("node")
 
@@ -587,6 +591,7 @@ func main() {
 			Project: project,
 			Id:      node,
 			Files:   files,
+			Account: account,
 		})
 		if err != nil {
 			return err
@@ -662,6 +667,7 @@ func main() {
 	e.DELETE("/projects/:project/nodes/:node/files/:file", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
+		account := c.Get("user.id").(string)
 		project := c.Param("project")
 		node := c.Param("node")
 		file := c.Param("file")
@@ -669,6 +675,7 @@ func main() {
 		_, err := nodeSvc.RemoveFiles(ctx, &nodes.RemoveFilesRequest{
 			Project: project,
 			Id:      node,
+			Account: account,
 			FileIds: []string{
 				file,
 			},
