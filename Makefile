@@ -4,6 +4,7 @@ dist:
 	make -C ./commitlog dist
 	make -C ./gateway dist
 	make -C ./project dist
+	make -C ./nodes dist
 
 docker:
 	make -C ./api docker
@@ -12,6 +13,7 @@ docker:
 	make -C ./commitlog docker
 	make -C ./gateway docker
 	make -C ./project docker
+	make -C ./nodes docker
 
 docker-push:
 	make -C ./api docker-push
@@ -20,3 +22,4 @@ docker-push:
 	make -C ./commitlog docker-push
 	make -C ./gateway docker-push
 	make -C ./project docker-push
+	make -C ./nodes docker-push
