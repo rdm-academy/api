@@ -660,8 +660,10 @@ func main() {
 			contentType = rep.Mediatype
 		}
 
+		c.Response().Header().Set("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, file))
+
 		return c.Stream(http.StatusOK, contentType, resp.Body)
-	}, authMiddleware, userMiddleware)
+	})
 
 	// Remove a file from a node.
 	e.DELETE("/projects/:project/nodes/:node/files/:file", func(c echo.Context) error {
