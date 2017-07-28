@@ -35,30 +35,40 @@ message CreateRequest {
   string project = 2;
   NodeType type = 3;
   string title = 4;
+
+  string account = 5;
 }
 
 message SetTitleRequest {
   string id = 1;
   string project = 2;
   string title = 3;
+
+  string account = 5;
 }
 
 message SetNotesRequest {
   string id = 1;
   string project = 2;
   string notes = 3;
+
+  string account = 5;
 }
 
 message AddFilesRequest {
   string id = 1;
   string project = 2;
   repeated File files = 3;
+
+  string account = 5;
 }
 
 message RemoveFilesRequest {
   string id = 1;
   string project = 2;
   repeated string file_ids = 3;
+
+  string account = 5;
 }
 
 message GetRequest {
